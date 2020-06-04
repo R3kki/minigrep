@@ -9,15 +9,28 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(args: &[String]) -> Result<Config, &'static str> {
-        if args.len() < 3 {
-            return Err("Not enough arguments"); // main fn will handle the result
-        }
-        // fix performance of clone() later
-        let query = args[1].clone();
-        let filename = args[2].clone();
+    // taking ownership of args
+    pub fn new(mut args: std::env::Args) -> Result<Config, &'static str> {
+        // ignore the first return value of env::args since name of program
+        args.next();
+
+        let query = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Query string not provided"),
+        };
+        let filename = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Filename string not provided"),
+        };
 
         let case_sensitive = env::var("CASE_INSENSITIVE").is_err();
+
+        // if args.len() < 3 {
+        //     return Err("Not enough arguments"); // main fn will handle the result
+        // }
+        // // fix performance of clone() later
+        // let query = args[1].clone();
+        // let filename = args[2].clone();
 
         Ok(Config {
             query,
@@ -30,13 +43,19 @@ impl Config {
 // lifetime parameters specify which argument lifetime is connected to the return value
 // i.e. data returned by function will live as long as the `contents` argument
 pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    let mut results = Vec::new();
-    for line in contents.lines() {
-        if line.contains(query) {
-            results.push(line);
-        }
-    }
-    results
+    // let mut results = Vec::new();
+    // for line in contents.lines() {
+    //     if line.contains(query) {
+    //         results.push(line);
+    //     }
+    // }
+    // results
+
+    // concise itr adaptor, immutable (future parallel processing)
+    contents
+        .lines()
+        .filter(|line| line.contains(query))
+        .collect()
 }
 
 pub fn search_case_insensitive<'a>(
